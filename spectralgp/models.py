@@ -17,7 +17,6 @@ class ExactGPModel(gpytorch.models.ExactGP):
                     outputscale_prior = gpytorch.priors.NormalPrior(torch.zeros(1), torch.ones(1),
                                             transform=torch.exp)
                 )
-
         self.grid = grid
         if self.grid:
             self.grid_module = gpytorch.kernels.GridKernel(self.covar_module, grid = train_x.unsqueeze(1))
@@ -28,7 +27,6 @@ class ExactGPModel(gpytorch.models.ExactGP):
             covar_x = self.grid_module(x)
         else:
             covar_x = self.covar_module(x)
-
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 class LatentGPModel(gpytorch.models.ExactGP):
@@ -60,7 +58,6 @@ class LatentGPModel(gpytorch.models.ExactGP):
             covar_x = self.grid_module(x)
         else:
             covar_x = self.covar_module(x)
-
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 class SpectralModel(gpytorch.models.ExactGP):

@@ -24,14 +24,10 @@ class SpectralGPKernel(Kernel):
         symmetrize: use g^*(\omega) := 1/2 * (g(-\omega) + g(\omega))
         """
         super(SpectralGPKernel, self).__init__(**kwargs)
-
         self.normalize = normalize
         self.transform = transform
         self.symmetrize = symmetrize
-
         self.num_locs = num_locs
-
-
         self.register_parameter('latent_params', torch.nn.Parameter(torch.zeros(self.num_locs)))
 
     def initialize_from_data(self, train_x, train_y, num_locs=100, spacing='random',
