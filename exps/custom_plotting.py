@@ -52,7 +52,7 @@ def plot_spectrum(omega, alt_sampler, latent_mod, gen_kern, spectral_mean=None):
     plt.grid(alpha = 0.5)
     plt.show()
 
-def plot_predictions_real_dat(alt_sampler, omega, data_mod, latent_mod,train_x, train_y, test_x, test_y):
+def plot_predictions_real_dat(alt_sampler, data_mod, latent_mod,train_x, train_y, test_x, test_y):
     last_samples = min(10, alt_sampler.gsampled[0].size(1))
     # preprocess the spectral samples #
     out_samples = alt_sampler.gsampled[0][0, :, -last_samples:].detach()
@@ -94,7 +94,7 @@ def plot_predictions_real_dat(alt_sampler, omega, data_mod, latent_mod,train_x, 
     plt.title("Prediction on Data", fontsize=20)
     plt.legend(loc=1)
     plt.grid(alpha = 0.5)
-    plt.show()
+    #plt.show()
 
 
 def plot_kernel(alt_sampler, omega, data_mod, latent_mod, gen_kern, mu_init):
