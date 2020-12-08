@@ -124,7 +124,7 @@ def main(argv, seed=88):
 		W1 = data_mod.covar_module.W1
 		S = torch.exp(data_mod.covar_module.get_latent_params()).reshape(*W1.shape)
 		plt.figure()
-		plt.imshow(S)
+		plt.imshow(S.cpu())
 		plt.figure()
 		plot_predictions_real_dat(alt_sampler, data_mod, latent_mod, train_x, train_y, test_x, test_y)
 		plt.show()
