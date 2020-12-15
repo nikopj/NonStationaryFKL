@@ -21,7 +21,7 @@ class NonStatSpectralGPKernel(Kernel):
 
 	def initialize_from_data(self, train_x, train_y, num_locs=20,
 			latent_lh = None, latent_mod = None, period_factor = 8.,
-			latent_mean=None, omega=None, **kwargs):
+			latent_mean=None, omega=None, diag_spectrum =False, w2_shape = 5, **kwargs):
 		if omega is None:
 			x1 = train_x.unsqueeze(-1)
 			x2 = train_x.unsqueeze(-1)
@@ -30,11 +30,22 @@ class NonStatSpectralGPKernel(Kernel):
 			max_tau = period_factor * max_tau
 			omega1 = math.pi * 2. * torch.arange(self.num_locs).double().div(max_tau)
 		self.register_parameter('omega1', torch.nn.Parameter(omega1))
+		self.diag_spectrum  = diag_spectrum
 		self.omega1.requires_grad = False
 		self.dw = self.omega1[1]-self.omega1[0]
 		# initialize log-periodogram
 		log_periodogram = torch.ones(self.num_locs**2).double()
 		W1, W2 = torch.meshgrid(omega1, omega1)
+		if diag_spectrum:
+			self.w2_shape = w2_shape            
+			W2_temp = torch.zeros((W1.shape[0],w2_shape))
+			for j in range(W1.shape[0]-w2_shape):
+				W2_temp[j,:] =  W2[j,j:j+w2_shape]       
+			for j in range(5):
+				W2_temp[W1.shape[0]-w2_shape+j,:] =  W2[W1.shape[0]-w2_shape+j,W1.shape[0]-w2_shape:]  
+			W2 = W2_temp
+			W1 = W1[:,0:w2_shape]            
+			log_periodogram = torch.ones(self.num_locs*w2_shape).double()
 		omega = torch.stack([W1.flatten(), W2.flatten()]).t() # (num_locs, 2)
 		self.register_parameter('omega', torch.nn.Parameter(omega))
 		self.omega.requires_grad = False
@@ -71,7 +82,10 @@ class NonStatSpectralGPKernel(Kernel):
 
 	def forward(self,x1,x2,diag=False,last_dim_is_batch=False, **kwargs):
 		S = torch.exp(self.latent_params) # density
-		Sgrid = S.reshape(1,1,self.num_locs, self.num_locs)
+		if self.diag_spectrum:
+			Sgrid = S.reshape(1,1,self.num_locs, self.w2_shape)
+		else:
+			Sgrid = S.reshape(1,1,self.num_locs, self.num_locs)
 		# reshape variables for broadcasting
 		x1 = x1.reshape(-1,1,1,1)
 		x2 = x2.reshape(1,-1,1,1)
