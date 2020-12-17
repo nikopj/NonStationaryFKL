@@ -8,7 +8,7 @@ import spectralgp
 from custom_plotting import plot_predictions_real_dat, plot_spectrum, plot_kernel
 from spectralgp.sampling_factories import ss_factory, ess_factory
 import data
-from save_models import save_model_output
+from save_models import save_model_output, load_model_output
 import matplotlib.pyplot as plt
 
 torch.set_default_dtype(torch.float64)
@@ -48,7 +48,12 @@ def parse():
 	parser.add_argument('--save', help='(bool) save model output (samples and model and omega)?',
 						default=False, type=bool)
 	parser.add_argument('--lr_init', help="(float) learning rate for ss factory", default=1e-2, type=float)
-	parser.add_argument('--stationary', help='(int) use stationary kernel?', default=1, type=int)
+	parser.add_argument('--stationary', help='(int) Stationary or non-stationary spectral kernel?',
+						default=1, type=int)
+	parser.add_argument('--load', help='(int) load model output (samples and model and omega)?',
+						default=0, type=int)
+	parser.add_argument('--compare', help='(int) load saved training and testing data?',
+						default=0, type=int)
 	return parser.parse_args()
 
 def main(argv, seed=88):
@@ -67,10 +72,23 @@ def main(argv, seed=88):
 	##########################################
 	## options ##
 	# load data
-	train_x, train_y, test_x, test_y, gen_kern = data.read_data(args.data, nx=args.nx, gen_pars=gen_pars,
-															linear_pars=linear_pars, spacing='even')
+	if args.compare:
+		fn = f"./saved_outputs/{args.data}_data.pt"
+		print(f"Loading data from {fn} ...")
+		train_x, train_y, test_x, test_y = torch.load(f"./saved_outputs/{args.data}_data.pt")
+		gen_kern = None
+	else:
+		train_x, train_y, test_x, test_y, gen_kern = data.read_data(args.data, nx=args.nx, gen_pars=gen_pars,
+																linear_pars=linear_pars, spacing='even')
+	
+	if args.save:
+		fn = f"./saved_outputs/{args.data}_data.pt"
+		print(f"Saving data at {fn} ...")
+		torch.save((train_x, train_y, test_x, test_y), fn)
+
 	use_cuda = torch.cuda.is_available()
 	if use_cuda:
+		print("Using CUDA.")	
 		torch.set_default_tensor_type(torch.cuda.DoubleTensor)
 		train_x, train_y, test_x, test_y = train_x.cuda(), train_y.cuda(), test_x.cuda(), test_y.cuda()
 		if gen_kern is not None:
@@ -99,8 +117,14 @@ def main(argv, seed=88):
 						[spectralgp.sampling_factories.ess_factory],
 						totalSamples=args.iters, numInnerSamples=args.ess_iters,
 						numOuterSamples=args.optim_iters)
-
-	alt_sampler.run()
+	if args.load:
+		print(f"Loading ./saved_outputs/{args.data}*.pt ...")
+		out_samples, data_mod, omega = load_model_output(args.data, data_mod)
+	else:
+		alt_sampler.run()
+		last_samples = min(10, alt_sampler.gsampled[0].size(1))
+		# preprocess the spectral samples #
+		out_samples = alt_sampler.gsampled[0][0, :, -last_samples:].detach()
 
 	data_mod.eval()
 	test_yhat = data_mod(test_x).mean
@@ -117,24 +141,32 @@ def main(argv, seed=88):
 	omega = latent_mod.train_inputs[0].squeeze()
 
 	if args.save:
+		print("Saving model...")
 		save_model_output(alt_sampler, data_mod, omega, args.data)
+
 
 	if not args.stationary:
 		W1 = data_mod.covar_module.W1
 		S = torch.exp(data_mod.covar_module.get_latent_params()).reshape(*W1.shape)
+		fig = plt.figure()
+		im = plt.imshow(S.cpu())
+		fig.colorbar(im)
+		plt.xlabel('w1')
+		plt.ylabel('w2')
+		plt.title('Spectrum')
 		plt.figure()
-		plt.imshow(S.cpu())
-		plt.figure()
-		plot_predictions_real_dat(alt_sampler, data_mod, latent_mod, train_x, train_y, test_x, test_y)
+		plot_predictions_real_dat(out_samples, data_mod, latent_mod, train_x, train_y, test_x, test_y)
 		plt.show()
-		# plt.plot(omega.numpy(), alt_sampler.gsampled[:, -10:].detach().numpy())
+		# plt.plot(omega.numpy(), alt_sampler.gsampled[0, :, -10:].detach().numpy())
 		# plt.show()
 	else:
+		#plt.figure()
+	#	plot_spectrum(omega, alt_sampler, latent_mod, gen_kern)
 		plt.figure()
-		plot_spectrum(omega, alt_sampler, latent_mod, gen_kern)
-		plt.figure()
-		plot_predictions_real_dat(alt_sampler, data_mod, latent_mod, train_x, train_y, test_x, test_y)
-		plt.figure()
-		plot_kernel(alt_sampler, omega, data_mod, latent_mod, gen_kern, None)
+		plot_predictions_real_dat(out_samples, data_mod, latent_mod, train_x, train_y, test_x, test_y)
+	#	plt.figure()
+	#	plot_kernel(alt_sampler, omega, data_mod, latent_mod, gen_kern, None)
+		plt.show()
+
 if __name__ == '__main__':
 	main(sys.argv[1:])
