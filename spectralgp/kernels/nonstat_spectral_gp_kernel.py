@@ -32,13 +32,13 @@ class NonStatSpectralGPKernel(Kernel):
 		self.register_parameter('omega1', torch.nn.Parameter(omega1))
 		self.omega1.requires_grad = False
 		self.dw = self.omega1[1]-self.omega1[0]
-		# initialize log-periodogram
-		log_periodogram = torch.ones(self.num_locs**2).double()
 		W1, W2 = torch.meshgrid(omega1, omega1)
 		omega = torch.stack([W1.flatten(), W2.flatten()]).t() # (num_locs, 2)
 		self.register_parameter('omega', torch.nn.Parameter(omega))
 		self.omega.requires_grad = False
-		#log_periodogram = -(omega[:,0]-omega[:,1])**2 / (2*self.omega.max())
+		# initialize log-periodogram
+		#log_periodogram = torch.ones(self.num_locs**2).double()
+		log_periodogram = -(omega[:,0]-omega[:,1])**2 / (2*self.omega.max())
 		#print("omega_grid.shape", omega_grid.shape)
 		#print("log_periodogram.shape", log_periodogram.shape)
 		# if latent model is passed in, use that

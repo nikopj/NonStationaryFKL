@@ -61,7 +61,7 @@ def main(argv, seed=88):
 	gen_pars = [args.lengthscale, args.period]
 	linear_pars = [args.slope, args.intercept]
 
-	torch.random.manual_seed(seed)
+	#torch.random.manual_seed(seed)
 	##########################################
 	## generate data and push to gpu ##
 	##########################################
