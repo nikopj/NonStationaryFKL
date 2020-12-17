@@ -56,7 +56,7 @@ class LogRBFMean2D(gpytorch.means.Mean):
 
 	def forward(self, input):
 		# logrbf up to constants is: c - t^1 / 2l
-		out = self.constant - (input[:,0]-input[:,1]).pow(2).squeeze(-1) / (2 * (softplus(self.lengthscale.view(-1)) + 1e-7) )
+		out = self.constant - input[:,0]*input[:,1]*(input[:,0]-input[:,1]).pow(2).squeeze(-1) / (2 * (softplus(self.lengthscale.view(-1)) + 1e-7) )
 		return out
 
 

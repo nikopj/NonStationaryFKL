@@ -111,7 +111,6 @@ def main(argv, seed=88):
 
 	latent_mod, latent_lh = data_mod.covar_module.latent_mod, data_mod.covar_module.latent_lh
 	#data_mod.covar_module.latent_mod, data_mod.covar_module.latent_lh = None, None
-
 	#print(list(data_mod.named_parameters()))
 	#print(list(latent_mod.named_parameters()))
 
@@ -131,8 +130,11 @@ def main(argv, seed=88):
 		# plt.plot(omega.numpy(), alt_sampler.gsampled[:, -10:].detach().numpy())
 		# plt.show()
 	else:
+		plt.figure()
 		plot_spectrum(omega, alt_sampler, latent_mod, gen_kern)
+		plt.figure()
 		plot_predictions_real_dat(alt_sampler, data_mod, latent_mod, train_x, train_y, test_x, test_y)
+		plt.figure()
 		plot_kernel(alt_sampler, omega, data_mod, latent_mod, gen_kern, None)
 if __name__ == '__main__':
 	main(sys.argv[1:])
